@@ -1,7 +1,7 @@
 // src/context/__tests__/AuthContext.test.js
 import React from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
-import { AuthProvider, useAuth } from '../AuthContext';
+import AuthContext, { AuthProvider, useAuth } from '../AuthContext';
 import { supabase } from '../../supabase/supabase';
 
 // Mock Supabase client
@@ -242,18 +242,19 @@ describe('AuthContext', () => {
     const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
     
     let result;
-    await act(async () => {
-      render(
-        <AuthProvider>
-          {/* Use a different test component to catch errors */}
-          {(function TestErrorComponent() {
-            const { login, authError } = useAuth();
-            result = { login, authError };
-            return <div>Auth Error Test</div>;
-          })()}
-        </AuthProvider>
-      );
-    });
+    const TestErrorComponent = () => {
+        const { login, authError } = useAuth();
+        result = { login, authError };
+        return <div>Auth Error Test</div>;
+      };
+      
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestErrorComponent />
+          </AuthProvider>
+        );
+      });
     
     await act(async () => {
       try {
@@ -280,17 +281,19 @@ describe('AuthContext', () => {
     const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
     
     let result;
-    await act(async () => {
-      render(
-        <AuthProvider>
-          {(function TestErrorComponent() {
-            const { signup, authError } = useAuth();
-            result = { signup, authError };
-            return <div>Auth Error Test</div>;
-          })()}
-        </AuthProvider>
-      );
-    });
+    const TestErrorComponent = () => {
+        const { signup, authError } = useAuth();
+        result = { signup, authError };
+        return <div>Auth Error Test</div>;
+      };
+      
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestErrorComponent />
+          </AuthProvider>
+        );
+      });
     
     await act(async () => {
       try {
@@ -330,17 +333,19 @@ describe('AuthContext', () => {
     });
     
     let result;
-    await act(async () => {
-      render(
-        <AuthProvider>
-          {(function ProfileUpdateComponent() {
-            const { updateProfile, currentUser } = useAuth();
-            result = { updateProfile, currentUser };
-            return <div>Profile Update Test</div>;
-          })()}
-        </AuthProvider>
-      );
-    });
+    const ProfileUpdateComponent = () => {
+        const { updateProfile, currentUser } = useAuth();
+        result = { updateProfile, currentUser };
+        return <div>Profile Update Test</div>;
+      };
+      
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <ProfileUpdateComponent />
+          </AuthProvider>
+        );
+      });
     
     expect(result.currentUser).not.toBeNull();
     

@@ -4,7 +4,7 @@ import React from 'react';
 const SetInput = ({ set, setIndex, onChange, onRemove, canRemove, unit }) => {
   return (
     <div className="grid grid-cols-12 gap-2 items-center">
-      <div className="col-span-2 text-sm font-medium text-gray-600">
+      <div className="col-span-2 text-sm font-medium text-gray-600" role="cell">
         Set {setIndex + 1}
       </div>
       
@@ -19,6 +19,7 @@ const SetInput = ({ set, setIndex, onChange, onRemove, canRemove, unit }) => {
             min="0"
             step="0.5"
             required
+            aria-label={`Weight for set ${setIndex + 1}`}
           />
           <div className="absolute right-2 top-2 text-xs text-gray-500">
             {unit}
@@ -37,6 +38,7 @@ const SetInput = ({ set, setIndex, onChange, onRemove, canRemove, unit }) => {
             min="1"
             step="1"
             required
+            aria-label={`Reps for set ${setIndex + 1}`}
           />
           <div className="absolute right-2 top-2 text-xs text-gray-500">
             reps

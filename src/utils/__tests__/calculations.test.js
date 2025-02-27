@@ -12,9 +12,9 @@ const {
     describe('calculateOneRepMax', () => {
       test('should calculate 1RM correctly using Brzycki formula', () => {
         // Test with various weight/rep combinations
-        expect(calculateOneRepMax(100, 5)).toBeCloseTo(116.5, 1);
-        expect(calculateOneRepMax(80, 10)).toBeCloseTo(107, 1);
-        expect(calculateOneRepMax(200, 3)).toBeCloseTo(218, 1);
+        expect(calculateOneRepMax(100, 5)).toBeCloseTo(112.5, 1);
+        expect(calculateOneRepMax(80, 10)).toBeCloseTo(106.5, 1);
+        expect(calculateOneRepMax(200, 3)).toBeCloseTo(212, 1);
       });
   
       test('should return the weight itself when reps is 1', () => {
@@ -30,7 +30,7 @@ const {
   
       test('should round to nearest 0.5', () => {
         // Example: 116.27 should round to 116.5
-        expect(calculateOneRepMax(100, 5)).toBe(116.5);
+        expect(calculateOneRepMax(100, 5)).toBe(112.5);
       });
     });
   
@@ -43,7 +43,7 @@ const {
       });
   
       test('should round to nearest 0.5', () => {
-        expect(calculateWeightForPercentage(225, 67)).toBe(150.5);
+        expect(calculateWeightForPercentage(225, 67)).toBe(151);
       });
   
       test('should return 0 when inputs are invalid', () => {
@@ -57,7 +57,7 @@ const {
     describe('calculateRepsForWeight', () => {
       test('should calculate reps for weight correctly based on 1RM', () => {
         expect(calculateRepsForWeight(200, 180)).toBe(5);
-        expect(calculateRepsForWeight(200, 160)).toBe(9);
+        expect(calculateRepsForWeight(200, 160)).toBe(8);
         expect(calculateRepsForWeight(100, 90)).toBe(5);
       });
   
