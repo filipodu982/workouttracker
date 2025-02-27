@@ -1,7 +1,7 @@
 // src/context/WorkoutContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from './AuthContext';
-import { getUserWorkouts } from '../supabase/firestoreService';
+import { getUserWorkouts, deleteWorkout } from '../supabase/firestoreService';
 
 const WorkoutContext = createContext();
 
@@ -77,6 +77,18 @@ export const WorkoutProvider = ({ children }) => {
     }
   };
 
+  const deleteWorkoutFromState = async (id) => {
+    try {
+      await deleteWorkout(id);
+      setWorkouts(prevWorkouts => 
+        prevWorkouts.filter(workout => workout.id !== id)
+      );
+    } catch (err) {
+      console.error('Error deleting workout:', err);
+      throw err;
+    }
+  };
+
   const value = {
     workouts,
     loading,
@@ -84,6 +96,7 @@ export const WorkoutProvider = ({ children }) => {
     addWorkoutToState,
     updateWorkoutInState,
     removeWorkoutFromState,
+    deleteWorkoutFromState,
     refreshWorkouts
   };
 
