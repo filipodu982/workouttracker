@@ -57,7 +57,10 @@ export const calculateOneRepMax = (weight, reps) => {
     if (!sets || !sets.length) return 0;
     
     return sets.reduce((total, set) => {
-      return total + (set.reps * set.weight);
+      // Check if both reps and weight are valid numbers
+      const reps = Number(set.reps) || 0;
+      const weight = Number(set.weight) || 0;
+      return total + (reps * weight);
     }, 0);
   };
   

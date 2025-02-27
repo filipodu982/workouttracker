@@ -131,9 +131,9 @@ describe('OneRepMaxCalculator', () => {
     expect(calculateWeightForPercentage).toHaveBeenCalledWith(200, 90);
     
     // Check intensity labels
-    expect(screen.getByText('Very Heavy')).toBeInTheDocument();
-    expect(screen.getByText('Heavy')).toBeInTheDocument();
-    expect(screen.getByText('Moderate to Heavy')).toBeInTheDocument();
+    expect(screen.getAllByText('Very Heavy').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Heavy').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Moderate to Heavy').length).toBeGreaterThan(0);
   });
 
   test('resets calculator when Reset button is clicked', async () => {

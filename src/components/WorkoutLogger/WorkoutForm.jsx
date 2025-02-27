@@ -31,47 +31,57 @@ const WorkoutForm = ({ onSubmit }) => {
   }, []);
 
   const handleExerciseChange = (index, field, value) => {
-    const updatedExercises = [...exercises];
-    updatedExercises[index][field] = value;
-    setExercises(updatedExercises);
+    setExercises(prevExercises => {
+      const updatedExercises = [...prevExercises];
+      updatedExercises[index][field] = value;
+      return updatedExercises;
+    });
   };
 
   const handleSetChange = (exerciseIndex, setIndex, field, value) => {
-    const updatedExercises = [...exercises];
-    updatedExercises[exerciseIndex].sets[setIndex][field] = value;
-    setExercises(updatedExercises);
+    setExercises(prevExercises => {
+      const updatedExercises = [...prevExercises];
+      updatedExercises[exerciseIndex].sets[setIndex][field] = value;
+      return updatedExercises;
+    });
   };
 
   const addExercise = () => {
-    setExercises([...exercises, { name: '', sets: [{ weight: '', reps: '' }] }]);
+    setExercises(prevExercises => [...prevExercises, { name: '', sets: [{ weight: '', reps: '' }] }]);
   };
 
   const removeExercise = (index) => {
     if (exercises.length > 1) {
-      const updatedExercises = [...exercises];
-      updatedExercises.splice(index, 1);
-      setExercises(updatedExercises);
+      setExercises(prevExercises => {
+        const updatedExercises = [...prevExercises];
+        updatedExercises.splice(index, 1);
+        return updatedExercises;
+      });
     }
   };
 
   const addSet = (exerciseIndex) => {
-    const updatedExercises = [...exercises];
-    const prevSet = updatedExercises[exerciseIndex].sets[updatedExercises[exerciseIndex].sets.length - 1];
-    
-    // Copy values from previous set for convenience
-    updatedExercises[exerciseIndex].sets.push({ 
-      weight: prevSet?.weight || '',
-      reps: prevSet?.reps || ''
+    setExercises(prevExercises => {
+      const updatedExercises = [...prevExercises];
+      const prevSet = updatedExercises[exerciseIndex].sets[updatedExercises[exerciseIndex].sets.length - 1];
+      
+      // Copy values from previous set for convenience
+      updatedExercises[exerciseIndex].sets.push({ 
+        weight: prevSet?.weight || '',
+        reps: prevSet?.reps || ''
+      });
+      
+      return updatedExercises;
     });
-    
-    setExercises(updatedExercises);
   };
 
   const removeSet = (exerciseIndex, setIndex) => {
     if (exercises[exerciseIndex].sets.length > 1) {
-      const updatedExercises = [...exercises];
-      updatedExercises[exerciseIndex].sets.splice(setIndex, 1);
-      setExercises(updatedExercises);
+      setExercises(prevExercises => {
+        const updatedExercises = [...prevExercises];
+        updatedExercises[exerciseIndex].sets.splice(setIndex, 1);
+        return updatedExercises;
+      });
     }
   };
 
@@ -145,10 +155,11 @@ const WorkoutForm = ({ onSubmit }) => {
       )}
       
       <div className="mb-6">
-        <label className="form-label">
+        <label htmlFor="workout-name" className="form-label">
           Workout Name
         </label>
         <input
+          id="workout-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -159,10 +170,11 @@ const WorkoutForm = ({ onSubmit }) => {
 
       <div className="mb-6 flex flex-col md:flex-row md:space-x-4">
         <div className="flex-1 mb-4 md:mb-0">
-          <label className="form-label">
+          <label htmlFor="workout-date" className="form-label">
             Date
           </label>
           <input
+            id="workout-date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -171,10 +183,11 @@ const WorkoutForm = ({ onSubmit }) => {
         </div>
 
         <div className="w-full md:w-1/4">
-          <label className="form-label">
+          <label htmlFor="weight-unit" className="form-label">
             Weight Unit
           </label>
           <select
+            id="weight-unit"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
             className="form-input"
