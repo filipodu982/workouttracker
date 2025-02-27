@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,7 +9,14 @@ const Login = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, authError } = useAuth();
+
+  // Use auth error from context if available
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,11 +28,15 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       console.error('Login error:', err);
-      setError(
-        err.code === 'auth/invalid-credential'
-          ? 'Invalid email or password. Please try again.'
-          : 'An error occurred during login. Please try again later.'
-      );
+      
+      // Set appropriate error message based on error code
+      if (err.message.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please try again.');
+      } else if (err.message.includes('Email not confirmed')) {
+        setError('Please check your email and confirm your account before logging in.');
+      } else {
+        setError('An error occurred during login. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }

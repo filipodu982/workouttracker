@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebase/firebase';
+import { supabase } from '../supabase/supabase';
 
 // Create context
 const AuthContext = createContext();
@@ -13,119 +13,136 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
-  // Check if user is stored in localStorage on initial load
+  // Check auth status on initial load
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setCurrentUser(user);
-      
-      // Important: Also set the user in the auth object
-      auth.currentUser = user;
-    }
-    setLoading(false);
+    const checkUser = async () => {
+      try {
+        // Get session from Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          setCurrentUser(session.user);
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          setCurrentUser(session.user);
+        } else {
+          setCurrentUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    checkUser();
+
+    // Clean up subscription
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
   }, []);
 
-  // Register a new user
-  const signup = (email, password, displayName) => {
-    return new Promise((resolve, reject) => {
-      try {
-        // Check if email already exists
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const existingUser = users.find(user => user.email === email);
-        
-        if (existingUser) {
-          const error = { code: 'auth/email-already-in-use' };
-          reject(error);
-          return;
-        }
+  // Sign up function
+  const signup = async (email, password, displayName) => {
+    try {
+      setAuthError(null);
+      
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: displayName,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        },
+      });
 
-        // Create new user
-        const newUser = {
-          uid: Date.now().toString(),
-          email,
-          displayName,
-          createdAt: new Date().toISOString()
-        };
-        
-        // Add to users list
-        users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
-        
-        // Set as current user in both state and auth
-        localStorage.setItem('user', JSON.stringify(newUser));
-        setCurrentUser(newUser);
-        auth.currentUser = newUser; // Set in auth object
-        
-        resolve(newUser);
-      } catch (error) {
-        reject(error);
+      if (error) {
+        throw error;
       }
-    });
+
+      return data;
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    }
   };
 
-  // Login existing user
-  const login = (email, password) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const user = users.find(user => user.email === email);
-        
-        if (!user) {
-          const error = { code: 'auth/invalid-credential' };
-          reject(error);
-          return;
-        }
-        
-        // Set as current user in both state and auth
-        localStorage.setItem('user', JSON.stringify(user));
-        setCurrentUser(user);
-        auth.currentUser = user; // Set in auth object
-        
-        resolve(user);
-      } catch (error) {
-        reject(error);
+  // Sign in function
+  const login = async (email, password) => {
+    try {
+      setAuthError(null);
+      
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
       }
-    });
+
+      return data;
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    }
   };
 
-  // Logout user
-  const logout = () => {
-    localStorage.removeItem('user');
-    setCurrentUser(null);
-    auth.currentUser = null; // Clear in auth object
-    return Promise.resolve();
+  // Sign out function
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
   };
 
   // Update user profile
-  const updateProfile = (user, profileData) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const updatedUsers = users.map(u => {
-          if (u.uid === user.uid) {
-            const updatedUser = { ...u, ...profileData };
-            return updatedUser;
-          }
-          return u;
-        });
-        
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        
-        // Update current user if it's the same user
-        if (currentUser && currentUser.uid === user.uid) {
-          const updatedUser = { ...currentUser, ...profileData };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          setCurrentUser(updatedUser);
-          auth.currentUser = updatedUser; // Update in auth object
-        }
-        
-        resolve();
-      } catch (error) {
-        reject(error);
+  const updateProfile = async (userData) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: userData
+      });
+
+      if (error) {
+        throw error;
       }
-    });
+      
+      // Update the current user with new data
+      if (currentUser) {
+        setCurrentUser({
+          ...currentUser,
+          user_metadata: {
+            ...currentUser.user_metadata,
+            ...userData
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
   };
 
   const value = {
@@ -133,7 +150,8 @@ export const AuthProvider = ({ children }) => {
     signup,
     login,
     logout,
-    updateProfile
+    updateProfile,
+    authError
   };
 
   return (

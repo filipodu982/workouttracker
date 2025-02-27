@@ -1,12 +1,30 @@
 // src/utils/initializeDatabase.js
-// This is now handled automatically by the mock Firebase service
-// We keep this file but make it a no-op since initialization 
-// happens in the mockFirebase.js constructor
+import sampleExercises from './sampleExerciseData';
+import { initializeExerciseDatabase } from '../supabase/firestoreService';
 
-const initializeExerciseDatabase = async () => {
-    // Database is already initialized in mockFirebase.js
-    console.log('Exercise database already initialized by mock service.');
-    return true;
-  };
-  
-  export default initializeExerciseDatabase;
+/**
+ * Initialize the exercise database with sample data
+ */
+const initializeDatabaseWithSampleData = async () => {
+  try {
+    // Format exercises for Supabase
+    const formattedExercises = sampleExercises.map(exercise => ({
+      name: exercise.name,
+      primary_muscle_group: exercise.primaryMuscleGroup,
+      secondary_muscle_groups: exercise.secondaryMuscleGroups || [],
+      equipment: exercise.equipment,
+      difficulty: exercise.difficulty,
+      description: exercise.description,
+      instructions: exercise.instructions || [],
+      tips: exercise.tips || []
+    }));
+
+    // Initialize database
+    await initializeExerciseDatabase(formattedExercises);
+    console.log('Exercise database initialized');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+  }
+};
+
+export default initializeDatabaseWithSampleData;

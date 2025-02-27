@@ -1,32 +1,18 @@
 // src/components/WorkoutHistory/WorkoutHistory.jsx
 import React, { useState, useEffect } from 'react';
-import { getUserWorkouts } from '../../firebase/firestore';
+import { getUserWorkouts } from '../../supabase/firestoreService';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkoutContext } from '../../context/WorkoutContext';
 
 const WorkoutHistory = () => {
-  const [workouts, setWorkouts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [expandedWorkout, setExpandedWorkout] = useState(null);
   const { currentUser } = useAuth();
+  const { workouts, loading, error, refreshWorkouts } = useWorkoutContext();
 
+  // Refresh workouts when component mounts
   useEffect(() => {
-    const fetchWorkouts = async () => {
-      try {
-        if (currentUser) {
-          const fetchedWorkouts = await getUserWorkouts(currentUser.uid);
-          setWorkouts(fetchedWorkouts);
-        }
-      } catch (err) {
-        console.error('Error fetching workouts:', err);
-        setError('Failed to load workouts. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWorkouts();
-  }, [currentUser]);
+    refreshWorkouts();
+  }, [refreshWorkouts]);
 
   const toggleWorkoutExpand = (workoutId) => {
     if (expandedWorkout === workoutId) {
@@ -78,8 +64,8 @@ const WorkoutHistory = () => {
           <div className="space-y-4">
             {workouts.map((workout) => {
               const workoutDate = workout.date ? 
-                (workout.date.toDate ? workout.date.toDate() : new Date(workout.date)) : 
-                new Date(workout.createdAt);
+                new Date(workout.date) : 
+                new Date(workout.created_at);
               
               const isExpanded = expandedWorkout === workout.id;
               const totalVolume = getWorkoutVolume(workout);
