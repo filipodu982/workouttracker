@@ -23,8 +23,8 @@ jobs:
       run: npm run build 
       env:
         CI: false
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     
     - name: Deploy to VPS
       uses: appleboy/scp-action@master
