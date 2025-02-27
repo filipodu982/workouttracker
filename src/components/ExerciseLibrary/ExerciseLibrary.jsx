@@ -1,6 +1,6 @@
 // src/components/ExerciseLibrary/ExerciseLibrary.jsx
 import React, { useState, useEffect } from 'react';
-import sampleExercises from '../../utils/sampleExerciseData';
+import { getExercises } from '../../supabase/firestoreService';
 import ExerciseCard from './ExerciseCard';
 
 const ExerciseLibrary = () => {
@@ -14,21 +14,9 @@ const ExerciseLibrary = () => {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        // Get exercises from localStorage or use sample data
-        const storedExercises = localStorage.getItem('exercises');
-        
-        if (storedExercises) {
-          setExercises(JSON.parse(storedExercises));
-        } else {
-          // Initialize with sample data if not found
-          const exercisesWithIds = sampleExercises.map(exercise => ({
-            id: Math.random().toString(36).substring(2, 9),
-            ...exercise
-          }));
-          
-          localStorage.setItem('exercises', JSON.stringify(exercisesWithIds));
-          setExercises(exercisesWithIds);
-        }
+        setLoading(true);
+        const exerciseData = await getExercises();
+        setExercises(exerciseData);
       } catch (err) {
         console.error('Error fetching exercises:', err);
         setError('Failed to load exercises. Please try again later.');
@@ -41,13 +29,13 @@ const ExerciseLibrary = () => {
   }, []);
 
   // Get unique muscle groups and equipment from exercises
-  const muscleGroups = ['all', ...new Set(exercises.map(ex => ex.primaryMuscleGroup))].filter(Boolean);
+  const muscleGroups = ['all', ...new Set(exercises.map(ex => ex.primary_muscle_group))].filter(Boolean);
   const equipmentTypes = ['all', ...new Set(exercises.map(ex => ex.equipment))].filter(Boolean);
 
   // Filter exercises based on search and filters
   const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMuscle = selectedMuscleGroup === 'all' || exercise.primaryMuscleGroup === selectedMuscleGroup;
+    const matchesMuscle = selectedMuscleGroup === 'all' || exercise.primary_muscle_group === selectedMuscleGroup;
     const matchesEquipment = selectedEquipment === 'all' || exercise.equipment === selectedEquipment;
     
     return matchesSearch && matchesMuscle && matchesEquipment;
@@ -119,7 +107,14 @@ const ExerciseLibrary = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredExercises.length > 0 ? (
           filteredExercises.map(exercise => (
-            <ExerciseCard key={exercise.id} exercise={exercise} />
+            <ExerciseCard 
+              key={exercise.id} 
+              exercise={{
+                ...exercise,
+                primaryMuscleGroup: exercise.primary_muscle_group,
+                secondaryMuscleGroups: exercise.secondary_muscle_groups
+              }} 
+            />
           ))
         ) : (
           <div className="col-span-full text-center py-8">
