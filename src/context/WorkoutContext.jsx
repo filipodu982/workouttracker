@@ -1,6 +1,7 @@
 // src/context/WorkoutContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from './AuthContext';
+import { getUserWorkouts } from '../supabase/firestoreService';
 
 const WorkoutContext = createContext();
 
@@ -19,15 +20,13 @@ export const WorkoutProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-
+  
       try {
         setLoading(true);
-        // Get workouts from localStorage
-        const allWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-        const userWorkouts = allWorkouts.filter(
-          workout => workout.userId === currentUser.uid
-        );
-        setWorkouts(userWorkouts);
+        console.log('Fetching workouts for user:', currentUser);
+        const fetchedWorkouts = await getUserWorkouts(currentUser.id);
+        console.log('Fetched workouts:', fetchedWorkouts);
+        setWorkouts(fetchedWorkouts);
         setError(null);
       } catch (err) {
         console.error('Error fetching workouts:', err);
@@ -36,62 +35,39 @@ export const WorkoutProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
+  
     fetchWorkouts();
   }, [currentUser]);
 
-  // Add workout to context and localStorage
+  // Add workout to state
   const addWorkoutToState = (workout) => {
-    // Add to state
     setWorkouts(prevWorkouts => [workout, ...prevWorkouts]);
-    
-    // Add to localStorage
-    const allWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-    allWorkouts.push(workout);
-    localStorage.setItem('workouts', JSON.stringify(allWorkouts));
   };
 
-  // Update workout in context and localStorage
+  // Update workout in state
   const updateWorkoutInState = (id, updatedData) => {
-    // Update in state
     setWorkouts(prevWorkouts =>
       prevWorkouts.map(workout =>
         workout.id === id ? { ...workout, ...updatedData } : workout
       )
     );
-    
-    // Update in localStorage
-    const allWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-    const updatedWorkouts = allWorkouts.map(workout =>
-      workout.id === id ? { ...workout, ...updatedData } : workout
-    );
-    localStorage.setItem('workouts', JSON.stringify(updatedWorkouts));
   };
 
-  // Remove workout from context and localStorage
+  // Remove workout from state
   const removeWorkoutFromState = (id) => {
-    // Remove from state
     setWorkouts(prevWorkouts => 
       prevWorkouts.filter(workout => workout.id !== id)
     );
-    
-    // Remove from localStorage
-    const allWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-    const updatedWorkouts = allWorkouts.filter(workout => workout.id !== id);
-    localStorage.setItem('workouts', JSON.stringify(updatedWorkouts));
   };
 
-  // Refresh workouts from localStorage
+  // Refresh workouts from database
   const refreshWorkouts = async () => {
     if (!currentUser) return;
     
     try {
       setLoading(true);
-      const allWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-      const userWorkouts = allWorkouts.filter(
-        workout => workout.userId === currentUser.uid
-      );
-      setWorkouts(userWorkouts);
+      const fetchedWorkouts = await getUserWorkouts(currentUser.id);
+      setWorkouts(fetchedWorkouts);
       setError(null);
     } catch (err) {
       console.error('Error refreshing workouts:', err);

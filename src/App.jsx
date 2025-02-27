@@ -6,7 +6,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './components/Dashboard/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import initializeExerciseDatabase from './utils/initializeDatabase';
+import ConfirmationSuccess from './pages/ConfirmationSuccess';
+import initializeDatabaseWithSampleData from './utils/initializeDatabase';
 
 // Protected route component
 const ProtectedRoute = ({ element }) => {
@@ -25,9 +26,18 @@ const AppRoutes = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize the exercise database
-    initializeExerciseDatabase();
-    setLoading(false);
+    const setup = async () => {
+      try {
+        // Initialize the exercise database with sample data
+        await initializeDatabaseWithSampleData();
+      } catch (error) {
+        console.error('Setup error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    setup();
   }, []);
 
   if (loading) {
@@ -49,6 +59,10 @@ const AppRoutes = () => {
           <Route 
             path="/register" 
             element={<PublicRoute element={<Register />} />} 
+          />
+          <Route 
+            path="/auth/confirm" 
+            element={<ConfirmationSuccess />} 
           />
         </Routes>
       </Router>

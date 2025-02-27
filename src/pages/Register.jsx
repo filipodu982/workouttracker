@@ -1,5 +1,5 @@
 // src/pages/Register.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,7 +11,14 @@ const Register = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, authError } = useAuth();
+
+  // Use auth error from context if available
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,14 +40,23 @@ const Register = () => {
 
     try {
       // Create new user
-      await signup(email, password, name);
-      navigate('/');
+      const { user } = await signup(email, password, name);
+      
+      // Check if email confirmation is required
+      if (user?.confirmed_at) {
+        // If email is auto-confirmed, navigate to dashboard
+        navigate('/');
+      } else {
+        // Show confirmation message
+        setError('Success! Please check your email to confirm your account before logging in.');
+        setLoading(false);
+      }
     } catch (err) {
       console.error('Registration error:', err);
       
-      if (err.code === 'auth/email-already-in-use') {
+      if (err.message.includes('already registered')) {
         setError('Email is already in use. Please use a different email or log in.');
-      } else if (err.code === 'auth/invalid-email') {
+      } else if (err.message.includes('Invalid email')) {
         setError('Invalid email address format.');
       } else {
         setError('An error occurred during registration. Please try again later.');
