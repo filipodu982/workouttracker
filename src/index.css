@@ -1,0 +1,65 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+  
+  h1 {
+    @apply text-3xl font-bold;
+  }
+  
+  h2 {
+    @apply text-2xl font-bold;
+  }
+  
+  h3 {
+    @apply text-xl font-semibold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+  }
+  
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-card p-6;
+  }
+  
+  .form-input {
+    @apply w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary-light;
+  }
+  
+  .form-label {
+    @apply block text-gray-700 font-semibold mb-2;
+  }
+  
+  .form-group {
+    @apply mb-4;
+  }
+  
+  .tab-active {
+    @apply border-b-2 border-primary text-primary font-medium;
+  }
+  
+  .tab-inactive {
+    @apply text-gray-500 hover:text-gray-700 font-medium;
+  }
+}
