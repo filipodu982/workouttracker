@@ -64,6 +64,31 @@ const newExercises = [
             "For added resistance, hold dumbbells or use a calf raise machine",
             "Try both straight-leg and bent-knee variations to target different parts of the calves"
         ]
+    },
+    {
+        name: "Power Clean",
+        primaryMuscleGroup: "Full Body",
+        secondaryMuscleGroups: ["Quadriceps", "Hamstrings", "Glutes", "Traps", "Shoulders", "Core"],
+        equipment: "Barbell",
+        difficulty: "Advanced",
+        description: "An explosive Olympic weightlifting movement that develops power, speed, and coordination while engaging multiple muscle groups throughout the body.",
+        instructions: [
+            "Start with the barbell on the ground, feet hip-width apart",
+            "Grip the bar slightly wider than shoulder width with a hook grip",
+            "Position your shoulders over the bar, hips higher than knees",
+            "Explosively extend your hips and knees (first pull)",
+            "As the bar passes your knees, accelerate by aggressively extending hips, knees, and ankles (second pull)",
+            "Pull yourself under the bar as it reaches maximum height",
+            "Catch the bar on your front deltoids in a quarter squat position",
+            "Stand up to complete the lift"
+        ],
+        tips: [
+            "Keep the bar close to your body throughout the movement",
+            "Focus on explosive hip extension in the second pull",
+            "Stay over the bar until you begin the second pull",
+            "Catch the bar with your elbows high and torso upright",
+            "Start with light weights to master proper technique"
+        ]
     }
 ];
 

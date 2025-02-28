@@ -9,49 +9,11 @@ const supabase = createClient(
     {
         auth: {
             autoRefreshToken: false,
-            persistSession: false
+            persistSession: false,
+            detectSessionInUrl: false
         }
     }
 );
-
-/**
- * Initialize the exercise database with new exercises
- * @param {Array} exercises - Exercise data to add
- */
-const initializeExerciseDatabase = async (exercises) => {
-    try {
-        // Check if exercises already exist
-        const { data: existingExercises, error: fetchError } = await supabase
-            .from('exercises')
-            .select('name');
-        
-        if (fetchError) {
-            throw fetchError;
-        }
-
-        // Filter out exercises that already exist
-        const existingNames = new Set(existingExercises.map(ex => ex.name));
-        const newExercises = exercises.filter(ex => !existingNames.has(ex.name));
-
-        // Only insert if there are new exercises
-        if (newExercises.length > 0) {
-            const { error } = await supabase
-                .from('exercises')
-                .insert(newExercises);
-            
-            if (error) {
-                throw error;
-            }
-
-            console.log(`Exercise database initialized with ${newExercises.length} new exercises`);
-        } else {
-            console.log('No new exercises to add - all exercises already exist in the database');
-        }
-    } catch (error) {
-        console.error('Error initializing exercise database:', error);
-        throw error;
-    }
-};
 
 /**
  * Add new exercises to the database
@@ -70,12 +32,36 @@ const addNewExercises = async () => {
             tips: exercise.tips || []
         }));
 
-        // Initialize database with new exercises
-        await initializeExerciseDatabase(formattedExercises);
+        // Check if exercises already exist
+        const { data: existingExercises, error: fetchError } = await supabase
+            .from('exercises')
+            .select('name');
+        
+        if (fetchError) {
+            throw fetchError;
+        }
+
+        // Filter out exercises that already exist
+        const existingNames = new Set(existingExercises.map(ex => ex.name));
+        const newExercisesToAdd = formattedExercises.filter(ex => !existingNames.has(ex.name));
+
+        if (newExercisesToAdd.length > 0) {
+            const { error } = await supabase
+                .from('exercises')
+                .insert(newExercisesToAdd);
+            
+            if (error) {
+                throw error;
+            }
+
+            console.log(`Successfully added ${newExercisesToAdd.length} new exercises`);
+        } else {
+            console.log('No new exercises to add - all exercises already exist in the database');
+        }
     } catch (error) {
         console.error('Error adding new exercises:', error);
     }
 };
 
-// Execute the function
+// Run the function
 addNewExercises(); 
