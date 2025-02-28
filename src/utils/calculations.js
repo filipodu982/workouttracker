@@ -41,10 +41,13 @@ export const calculateOneRepMax = (weight, reps) => {
   export const calculateRepsForWeight = (oneRM, weight) => {
     if (oneRM <= 0 || weight <= 0) return 0;
     
+    // If weight is less than 50% of 1RM, return max reps
+    if (weight <= oneRM * 0.5) return 36;
+    
     // Inverse of Brzycki formula: 37 - (36 × weight / oneRM)
     const reps = 37 - (36 * weight / oneRM);
     
-    // Max out at 36 reps (limitation of the formula)
+    // Cap at 36 reps and minimum of 1 rep
     return Math.min(Math.max(Math.round(reps), 1), 36);
   };
   

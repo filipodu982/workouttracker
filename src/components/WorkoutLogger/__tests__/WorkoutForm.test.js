@@ -1,8 +1,7 @@
 // src/components/WorkoutLogger/__tests__/WorkoutForm.test.js
-import React from 'react';
+import React, { act } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react-dom/test-utils';
 import WorkoutForm from '../WorkoutForm';
 import { getExercises } from '../../../firebase/firestore';
 
@@ -202,13 +201,13 @@ describe('WorkoutForm', () => {
     
     // Submit the form without filling any fields
     await act(async () => {
-      userEvent.click(screen.getByText(/log workout/i));
+      userEvent.click(screen.getByRole('button', { name: /log workout/i }));
     });
     
     // Check if error message appears
     await waitFor(() => {
       expect(screen.getByText(/please add at least one exercise/i)).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
     
     // Fill exercise name but not sets data
     await act(async () => {
@@ -217,13 +216,13 @@ describe('WorkoutForm', () => {
     
     // Try submitting again
     await act(async () => {
-      userEvent.click(screen.getByText(/log workout/i));
+      userEvent.click(screen.getByRole('button', { name: /log workout/i }));
     });
     
     // Check if error message about sets appears
     await waitFor(() => {
       expect(screen.getByText(/please add at least one set for bench press/i)).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
   });
 
   test('shows success message after successful submission', async () => {

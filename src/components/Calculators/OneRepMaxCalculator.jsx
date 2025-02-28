@@ -1,5 +1,5 @@
 // src/components/Calculators/OneRepMaxCalculator.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   calculateOneRepMax, 
   calculateWeightForPercentage,
@@ -14,48 +14,52 @@ const OneRepMaxCalculator = () => {
   const [unit, setUnit] = useState('kg');
   const [percentages, setPercentages] = useState([]);
 
-  // Default percentages to show
-  const defaultPercentages = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50];
+  const handleWeightChange = useCallback((e) => {
+    setWeight(e.target.value);
+    calculateResults(e.target.value, reps);
+  }, [reps]);
 
-  useEffect(() => {
-    if (weight > 0 && reps > 0) {
-      const calculatedOneRM = calculateOneRepMax(parseFloat(weight), parseInt(reps, 10));
+  const handleRepsChange = useCallback((e) => {
+    setReps(e.target.value);
+    calculateResults(weight, e.target.value);
+  }, [weight]);
+
+  const calculateResults = useCallback((weightVal, repsVal) => {
+    const w = parseFloat(weightVal);
+    const r = parseInt(repsVal, 10);
+
+    if (w > 0 && r > 0) {
+      const calculatedOneRM = calculateOneRepMax(w, r);
       setOneRM(calculatedOneRM);
-      
-      // Calculate weights for various percentages
-      const percentageData = defaultPercentages.map(percentage => {
-        const calculatedWeight = calculateWeightForPercentage(calculatedOneRM, percentage);
-        const estimatedReps = calculateRepsForWeight(calculatedOneRM, calculatedWeight);
-        
-        return {
-          percentage,
-          weight: calculatedWeight,
-          reps: estimatedReps,
-          color: getIntensityColor(percentage)
-        };
-      });
-      
+
+      const percentageData = [];
+      for (let i = 100; i >= 50; i -= 5) {
+        const targetWeight = calculateWeightForPercentage(calculatedOneRM, i);
+        const targetReps = calculateRepsForWeight(calculatedOneRM, targetWeight);
+        const intensity = getIntensityLabel(i);
+        const color = getIntensityColor(i);
+
+        percentageData.push({
+          percentage: i,
+          weight: targetWeight,
+          reps: targetReps,
+          intensity,
+          color
+        });
+      }
       setPercentages(percentageData);
     } else {
       setOneRM(0);
       setPercentages([]);
     }
-  }, [weight, reps]);
+  }, []);
 
-  const handleReset = () => {
-    // Replace this with direct DOM manipulation for the test
-    const weightInput = document.querySelector('input[placeholder="Enter weight"]');
-    const repsInput = document.querySelector('input[placeholder="Enter reps"]');
-    
-    if (weightInput) weightInput.value = '';
-    if (repsInput) repsInput.value = '';
-    
-    // Then update state
+  const handleReset = useCallback(() => {
     setWeight('');
     setReps('');
     setOneRM(0);
     setPercentages([]);
-  };
+  }, []);
 
   // Get intensity label based on percentage
   const getIntensityLabel = (percentage) => {
@@ -63,7 +67,6 @@ const OneRepMaxCalculator = () => {
     if (percentage >= 80) return 'Heavy';
     if (percentage >= 70) return 'Moderate to Heavy';
     if (percentage >= 60) return 'Moderate';
-    if (percentage >= 50) return 'Light to Moderate';
     return 'Light';
   };
 
@@ -82,7 +85,7 @@ const OneRepMaxCalculator = () => {
                 <input
                   type="number"
                   value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
+                  onChange={handleWeightChange}
                   placeholder="Enter weight"
                   className="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-primary focus:border-primary-light"
                   min="0"
@@ -106,7 +109,7 @@ const OneRepMaxCalculator = () => {
               <input
                 type="number"
                 value={reps}
-                onChange={(e) => setReps(e.target.value)}
+                onChange={handleRepsChange}
                 placeholder="Enter reps"
                 className="w-full p-2 border rounded focus:ring-2 focus:ring-primary focus:border-primary-light"
                 min="1"
@@ -174,7 +177,7 @@ const OneRepMaxCalculator = () => {
                             className="inline-block px-2 py-1 rounded-full text-xs font-medium"
                             style={{ backgroundColor: item.color + '33', color: item.color }}
                           >
-                            {getIntensityLabel(item.percentage)}
+                            {item.intensity}
                           </span>
                         </td>
                       </tr>
@@ -189,7 +192,7 @@ const OneRepMaxCalculator = () => {
             </div>
           ): (<div className="bg-white shadow-md rounded-lg p-6 text-center">
             {/* Empty state */}
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Enter weight and reps</h3>
+            <h3 className="text-lg font-medium text-gray-700 mb-2">No calculations yet</h3>
           </div>)}
           
           {!percentages.length && (

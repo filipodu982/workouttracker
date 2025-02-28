@@ -22,13 +22,22 @@ module.exports = {
     testPathIgnorePatterns: ['/node_modules/'],
     watchPathIgnorePatterns: ['node_modules'],
     moduleNameMapper: {
-      '\\.css$': '<rootDir>/src/__mocks__/styleMock.js',
-      '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/src/__mocks__/fileMock.js'
+      '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+      '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/__mocks__/fileMock.js',
     },
     verbose: true,
     clearMocks: true,
     coverageDirectory: 'coverage',
     transformIgnorePatterns: [
       '/node_modules/(?!(@testing-library|nanoid)/)'
-    ]
+    ],
+    coverageThreshold: {
+      global: {
+        branches: 80,
+        functions: 80,
+        lines: 80,
+        statements: 80,
+      },
+    },
+    coverageReporters: ['lcov', 'text', 'text-summary'],
   };
