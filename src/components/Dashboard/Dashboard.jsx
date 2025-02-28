@@ -7,6 +7,7 @@ import WorkoutHistory from '../WorkoutHistory/WorkoutHistory';
 import ExerciseLibrary from '../ExerciseLibrary/ExerciseLibrary';
 import OneRepMaxCalculator from '../Calculators/OneRepMaxCalculator';
 import WorkoutTemplates from '../WorkoutTemplates/WorkoutTemplates';
+import AnalyticsPage from '../Analytics/AnalyticsPage';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('workout');
@@ -38,6 +39,11 @@ const Dashboard = () => {
       id: 'calculator', 
       label: '1RM Calculator', 
       icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' 
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
     }
   ];
 
@@ -97,6 +103,7 @@ const Dashboard = () => {
           {activeTab === 'templates' && <WorkoutTemplates />}
           {activeTab === 'exercises' && <ExerciseLibrary />}
           {activeTab === 'calculator' && <OneRepMaxCalculator />}
+          {activeTab === 'analytics' && <AnalyticsPage />}
         </div>
       </div>
     </div>
