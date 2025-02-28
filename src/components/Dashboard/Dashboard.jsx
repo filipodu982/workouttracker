@@ -6,6 +6,7 @@ import WorkoutLogger from '../WorkoutLogger/WorkoutLogger';
 import WorkoutHistory from '../WorkoutHistory/WorkoutHistory';
 import ExerciseLibrary from '../ExerciseLibrary/ExerciseLibrary';
 import OneRepMaxCalculator from '../Calculators/OneRepMaxCalculator';
+import WorkoutTemplates from '../WorkoutTemplates/WorkoutTemplates';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('workout');
@@ -13,10 +14,31 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: 'workout', label: 'Workout Logger', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-    { id: 'history', label: 'Workout History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { id: 'exercises', label: 'Exercise Library', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
-    { id: 'calculator', label: '1RM Calculator', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' }
+    { 
+      id: 'workout', 
+      label: 'Workout Logger', 
+      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' 
+    },
+    { 
+      id: 'history', 
+      label: 'Workout History', 
+      icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' 
+    },
+    { 
+      id: 'templates', 
+      label: 'Templates', 
+      icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z' 
+    },
+    { 
+      id: 'exercises', 
+      label: 'Exercise Library', 
+      icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' 
+    },
+    { 
+      id: 'calculator', 
+      label: '1RM Calculator', 
+      icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' 
+    }
   ];
 
   const handleLogout = async () => {
@@ -72,6 +94,7 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow-sm">
           {activeTab === 'workout' && <WorkoutLogger />}
           {activeTab === 'history' && <WorkoutHistory />}
+          {activeTab === 'templates' && <WorkoutTemplates />}
           {activeTab === 'exercises' && <ExerciseLibrary />}
           {activeTab === 'calculator' && <OneRepMaxCalculator />}
         </div>

@@ -1,6 +1,7 @@
 // src/components/WorkoutLogger/WorkoutForm.jsx
 import React, { useState, useEffect } from 'react';
 import { getExercises } from '../../firebase/firestore';
+import { useWorkoutTemplateContext } from '../../context/WorkoutTemplateContext';
 import SetInput from './SetInput';
 
 const WorkoutForm = ({ onSubmit }) => {
@@ -15,6 +16,7 @@ const WorkoutForm = ({ onSubmit }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const { templates } = useWorkoutTemplateContext();
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -29,6 +31,21 @@ const WorkoutForm = ({ onSubmit }) => {
 
     fetchExercises();
   }, []);
+
+  const handleTemplateSelect = (templateId) => {
+    const selectedTemplate = templates.find(t => t.id === templateId);
+    if (selectedTemplate) {
+      setName(selectedTemplate.name);
+      setUnit(selectedTemplate.unit);
+      setExercises(selectedTemplate.exercises.map(exercise => ({
+        ...exercise,
+        sets: exercise.sets.map(set => ({
+          weight: set.weight.toString(),
+          reps: set.reps.toString()
+        }))
+      })));
+    }
+  };
 
   const handleExerciseChange = (index, field, value) => {
     setExercises(prevExercises => {
@@ -168,6 +185,25 @@ const WorkoutForm = ({ onSubmit }) => {
         </div>
       )}
       
+      <div className="mb-6">
+        <label htmlFor="template-select" className="form-label">
+          Load from Template
+        </label>
+        <select
+          id="template-select"
+          onChange={(e) => handleTemplateSelect(e.target.value)}
+          className="form-input"
+          value=""
+        >
+          <option value="">Select a template...</option>
+          {templates.map(template => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="mb-6">
         <label htmlFor="workout-name" className="form-label">
           Workout Name
