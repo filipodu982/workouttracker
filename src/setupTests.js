@@ -3,7 +3,7 @@
 // allows you to do things like:
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
-require('@testing-library/jest-dom');
+import '@testing-library/jest-dom';
 const { cleanup } = require('@testing-library/react');
 
 // Add a custom matcher for close floating-point comparison
@@ -53,6 +53,18 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }));
+
+// Mock environment variables for testing
+process.env.REACT_APP_SUPABASE_URL = 'https://test.supabase.co';
+process.env.REACT_APP_SUPABASE_ANON_KEY = 'test-key';
+
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 // Cleanup after each test
 afterEach(() => {
