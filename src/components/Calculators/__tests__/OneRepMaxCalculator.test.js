@@ -1,5 +1,5 @@
 // src/components/Calculators/__tests__/OneRepMaxCalculator.test.js
-import React from 'react';
+import React, { act } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import OneRepMaxCalculator from '../OneRepMaxCalculator';
@@ -68,7 +68,8 @@ describe('OneRepMaxCalculator', () => {
     // Check if percentage chart is not rendered initially
     expect(screen.queryByText('Percentage Chart')).not.toBeInTheDocument();
     
-    // Check if empty state message is shown
+    // Check if empty state messages are shown
+    expect(screen.getByText('No calculations yet')).toBeInTheDocument();
     expect(screen.getByText('Enter weight and reps')).toBeInTheDocument();
   });
 
@@ -82,11 +83,13 @@ describe('OneRepMaxCalculator', () => {
     const weightInput = screen.getByPlaceholderText('Enter weight');
     const repsInput = screen.getByPlaceholderText('Enter reps');
     
-    userEvent.clear(weightInput);
-    userEvent.type(weightInput, '200');
-    
-    userEvent.clear(repsInput);
-    userEvent.type(repsInput, '5');
+    await act(async () => {
+      userEvent.clear(weightInput);
+      userEvent.type(weightInput, '200');
+      
+      userEvent.clear(repsInput);
+      userEvent.type(repsInput, '5');
+    });
     
     // Check if 1RM is calculated and displayed
     await waitFor(() => {
@@ -108,11 +111,13 @@ describe('OneRepMaxCalculator', () => {
     const weightInput = screen.getByPlaceholderText('Enter weight');
     const repsInput = screen.getByPlaceholderText('Enter reps');
     
-    userEvent.clear(weightInput);
-    userEvent.type(weightInput, '180');
-    
-    userEvent.clear(repsInput);
-    userEvent.type(repsInput, '5');
+    await act(async () => {
+      userEvent.clear(weightInput);
+      userEvent.type(weightInput, '180');
+      
+      userEvent.clear(repsInput);
+      userEvent.type(repsInput, '5');
+    });
     
     // Wait for percentage calculations
     await waitFor(() => {
@@ -143,11 +148,13 @@ describe('OneRepMaxCalculator', () => {
     const weightInput = screen.getByPlaceholderText('Enter weight');
     const repsInput = screen.getByPlaceholderText('Enter reps');
     
-    userEvent.clear(weightInput);
-    userEvent.type(weightInput, '100');
-    
-    userEvent.clear(repsInput);
-    userEvent.type(repsInput, '10');
+    await act(async () => {
+      userEvent.clear(weightInput);
+      userEvent.type(weightInput, '100');
+      
+      userEvent.clear(repsInput);
+      userEvent.type(repsInput, '10');
+    });
     
     // Wait for calculations to be done
     await waitFor(() => {
@@ -155,8 +162,10 @@ describe('OneRepMaxCalculator', () => {
     });
     
     // Click the reset button
-    const resetButton = screen.getByText('Reset');
-    userEvent.click(resetButton);
+    await act(async () => {
+      const resetButton = screen.getByText('Reset');
+      userEvent.click(resetButton);
+    });
     
     // Check if inputs are cleared
     expect(weightInput.value).toBe('');
@@ -165,7 +174,8 @@ describe('OneRepMaxCalculator', () => {
     // Check if percentage chart is hidden
     expect(screen.queryByText('Percentage Chart')).not.toBeInTheDocument();
     
-    // Check if empty state is shown again
+    // Check if empty state messages are shown again
+    expect(screen.getByText('No calculations yet')).toBeInTheDocument();
     expect(screen.getByText('Enter weight and reps')).toBeInTheDocument();
   });
 
@@ -177,22 +187,29 @@ describe('OneRepMaxCalculator', () => {
     expect(unitSelect.value).toBe('kg');
     
     // Change unit to lbs
-    userEvent.selectOptions(unitSelect, 'lbs');
+    await act(async () => {
+      userEvent.selectOptions(unitSelect, 'lbs');
+    });
     expect(unitSelect.value).toBe('lbs');
     
     // Enter weight and reps
-    const weightInput = screen.getByPlaceholderText('Enter weight');
-    const repsInput = screen.getByPlaceholderText('Enter reps');
-    
-    userEvent.clear(weightInput);
-    userEvent.type(weightInput, '225');
-    
-    userEvent.clear(repsInput);
-    userEvent.type(repsInput, '5');
+    await act(async () => {
+      const weightInput = screen.getByPlaceholderText('Enter weight');
+      const repsInput = screen.getByPlaceholderText('Enter reps');
+      
+      userEvent.clear(weightInput);
+      userEvent.type(weightInput, '225');
+      
+      userEvent.clear(repsInput);
+      userEvent.type(repsInput, '5');
+    });
     
     // Check if 1RM is displayed with lbs unit
     await waitFor(() => {
-      const oneRMDisplay = screen.getByText(/\d+ lbs/);
+      // Look specifically for the 1RM value in the Estimated 1RM section
+      const oneRMDisplay = screen.getByText(/\d+ lbs/, {
+        selector: '.text-4xl.font-bold.text-primary'
+      });
       expect(oneRMDisplay).toBeInTheDocument();
     });
   });
@@ -204,21 +221,25 @@ describe('OneRepMaxCalculator', () => {
     const weightInput = screen.getByPlaceholderText('Enter weight');
     const repsInput = screen.getByPlaceholderText('Enter reps');
     
-    userEvent.clear(weightInput);
-    userEvent.type(weightInput, '0');
-    
-    userEvent.clear(repsInput);
-    userEvent.type(repsInput, '5');
+    await act(async () => {
+      userEvent.clear(weightInput);
+      userEvent.type(weightInput, '0');
+      
+      userEvent.clear(repsInput);
+      userEvent.type(repsInput, '5');
+    });
     
     // Check that no calculations are displayed
     expect(screen.queryByText('Percentage Chart')).not.toBeInTheDocument();
     
     // Enter valid weight but invalid reps
-    userEvent.clear(weightInput);
-    userEvent.type(weightInput, '100');
-    
-    userEvent.clear(repsInput);
-    userEvent.type(repsInput, '0');
+    await act(async () => {
+      userEvent.clear(weightInput);
+      userEvent.type(weightInput, '100');
+      
+      userEvent.clear(repsInput);
+      userEvent.type(repsInput, '0');
+    });
     
     // Still no calculations should be displayed
     expect(screen.queryByText('Percentage Chart')).not.toBeInTheDocument();
