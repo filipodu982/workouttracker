@@ -96,17 +96,21 @@ const WorkoutForm = ({ onSubmit }) => {
       const validExercises = exercises.filter(ex => ex.name.trim() !== '');
 
       if (validExercises.length === 0) {
-        throw new Error('Please add at least one exercise');
+        setError('Please add at least one exercise');
+        setSubmitting(false);
+        return;
       }
 
       // Validate sets
-      validExercises.forEach(exercise => {
+      for (const exercise of validExercises) {
         const validSets = exercise.sets.filter(
-          set => set.weight.trim() !== '' && set.reps.trim() !== ''
+          set => set.weight.toString().trim() !== '' && set.reps.toString().trim() !== ''
         );
 
         if (validSets.length === 0) {
-          throw new Error(`Please add at least one set for ${exercise.name}`);
+          setError(`Please add at least one set for ${exercise.name}`);
+          setSubmitting(false);
+          return;
         }
 
         // Convert string values to numbers
@@ -114,7 +118,7 @@ const WorkoutForm = ({ onSubmit }) => {
           weight: parseFloat(set.weight),
           reps: parseInt(set.reps, 10)
         }));
-      });
+      }
 
       const workoutData = {
         name: name.trim() || `Workout on ${new Date(date).toLocaleDateString()}`,
@@ -131,6 +135,7 @@ const WorkoutForm = ({ onSubmit }) => {
         setDate(new Date().toISOString().split('T')[0]);
         setExercises([{ name: '', sets: [{ weight: '', reps: '' }] }]);
         setSuccess(true);
+        setError(null);
         
         // Hide success message after 3 seconds
         setTimeout(() => setSuccess(false), 3000);
@@ -144,7 +149,16 @@ const WorkoutForm = ({ onSubmit }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
+    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6" noValidate>
+      {error && (
+        <div className="mb-6 bg-red-50 text-red-700 p-4 rounded-md flex items-center" role="alert">
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {error}
+        </div>
+      )}
+      
       {success && (
         <div className="mb-6 bg-green-50 text-green-700 p-4 rounded-md flex items-center">
           <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -296,12 +310,6 @@ const WorkoutForm = ({ onSubmit }) => {
           ))}
         </div>
       </div>
-
-      {error && (
-        <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-md">
-          {error}
-        </div>
-      )}
 
       <button
         type="submit"
