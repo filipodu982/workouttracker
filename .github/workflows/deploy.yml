@@ -1,11 +1,11 @@
-name: Deploy to VPS
+name: Test and Deploy
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  deploy:
+  test-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -15,9 +15,23 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+        cache: 'npm'
     
     - name: Install Dependencies
       run: npm ci
+    
+    - name: Run Tests with Coverage
+      run: npm run test:coverage
+      env:
+        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info
+        fail_ci_if_error: true
     
     - name: Build Project
       run: npm run build 
