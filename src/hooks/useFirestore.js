@@ -1,16 +1,6 @@
 // src/hooks/useFirestore.js
 import { useState } from 'react';
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  where,
-  getDocs
-} from 'firebase/firestore';
-import { db, auth } from '../firebase/firebase';
+import { supabase } from '../supabase/supabase';
 import { useWorkoutContext } from '../context/WorkoutContext';
 
 const useFirestore = (collectionName) => {
@@ -24,22 +14,34 @@ const useFirestore = (collectionName) => {
     setError(null);
 
     try {
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Add userId to the document if not provided
       const dataWithUser = {
         ...data,
-        userId: data.userId || auth.currentUser?.uid,
-        createdAt: new Date()
+        user_id: data.userId || user.id,
+        created_at: new Date()
       };
 
-      const collectionRef = collection(db, collectionName);
-      const docRef = await addDoc(collectionRef, dataWithUser);
+      const { data: newDoc, error: insertError } = await supabase
+        .from(collectionName)
+        .insert(dataWithUser)
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
       
       // If we're working with workouts, update the context
       if (collectionName === 'workouts' && workoutContext) {
-        workoutContext.addWorkoutToState({ id: docRef.id, ...dataWithUser });
+        workoutContext.addWorkoutToState(newDoc);
       }
       
-      return { id: docRef.id, ...dataWithUser };
+      return newDoc;
     } catch (err) {
       console.error(`Error adding ${collectionName} document:`, err);
       setError(err.message);
@@ -55,15 +57,21 @@ const useFirestore = (collectionName) => {
     setError(null);
 
     try {
-      const docRef = doc(db, collectionName, id);
-      await updateDoc(docRef, data);
+      const { data: updatedDoc, error: updateError } = await supabase
+        .from(collectionName)
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
       
       // If we're working with workouts, update the context
       if (collectionName === 'workouts' && workoutContext) {
-        workoutContext.updateWorkoutInState(id, data);
+        workoutContext.updateWorkoutInState(id, updatedDoc);
       }
       
-      return { id, ...data };
+      return updatedDoc;
     } catch (err) {
       console.error(`Error updating ${collectionName} document:`, err);
       setError(err.message);
@@ -79,8 +87,12 @@ const useFirestore = (collectionName) => {
     setError(null);
 
     try {
-      const docRef = doc(db, collectionName, id);
-      await deleteDoc(docRef);
+      const { error: deleteError } = await supabase
+        .from(collectionName)
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
       
       // If we're working with workouts, update the context
       if (collectionName === 'workouts' && workoutContext) {
@@ -103,20 +115,21 @@ const useFirestore = (collectionName) => {
     setError(null);
 
     try {
-      if (!auth.currentUser) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) {
         throw new Error('User not authenticated');
       }
 
-      const collectionRef = collection(db, collectionName);
-      const q = query(collectionRef, where('userId', '==', auth.currentUser.uid));
-      const querySnapshot = await getDocs(q);
+      const { data: documents, error: fetchError } = await supabase
+        .from(collectionName)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
       
-      const documents = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      return documents;
+      return documents || [];
     } catch (err) {
       console.error(`Error fetching ${collectionName} documents:`, err);
       setError(err.message);

@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkoutForm from '../WorkoutForm';
 import { getExercises } from '../../../firebase/firestore';
+import WorkoutTemplateContext from '../../../context/WorkoutTemplateContext';
 
 // Mock the firestore module
 jest.mock('../../../firebase/firestore', () => ({
@@ -14,8 +15,38 @@ jest.mock('../../../firebase/firestore', () => ({
   ])
 }));
 
+// Mock workout templates data
+const mockTemplates = [
+  {
+    id: '1',
+    name: 'Upper Body',
+    unit: 'kg',
+    exercises: [
+      {
+        name: 'Bench Press',
+        sets: [{ weight: 60, reps: 10 }]
+      }
+    ]
+  }
+];
+
+// Mock WorkoutTemplateContext wrapper
+const MockWorkoutTemplateProvider = ({ children }) => (
+  <WorkoutTemplateContext.Provider value={{ templates: mockTemplates }}>
+    {children}
+  </WorkoutTemplateContext.Provider>
+);
+
 describe('WorkoutForm', () => {
   const mockOnSubmit = jest.fn();
+
+  const renderWithContext = (ui) => {
+    return render(
+      <MockWorkoutTemplateProvider>
+        {ui}
+      </MockWorkoutTemplateProvider>
+    );
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,7 +61,7 @@ describe('WorkoutForm', () => {
 
   test('renders the form with default values', async () => {
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Check initial date value (today's date in ISO format)
@@ -52,7 +83,7 @@ describe('WorkoutForm', () => {
 
   test('adds an exercise when "Add Exercise" button is clicked', async () => {
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Initially there should be 1 exercise
@@ -71,7 +102,7 @@ describe('WorkoutForm', () => {
 
   test('removes an exercise when "Remove" button is clicked', async () => {
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Add a second exercise first
@@ -95,7 +126,7 @@ describe('WorkoutForm', () => {
 
   test('adds a set when "Add Set" button is clicked', async () => {
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Initially there should be 1 set
@@ -116,7 +147,7 @@ describe('WorkoutForm', () => {
 
   test('removes a set when remove button is clicked', async () => {
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Add a second set first
@@ -146,7 +177,7 @@ describe('WorkoutForm', () => {
     mockOnSubmit.mockResolvedValue({ success: true });
     
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Fill out the form
@@ -196,7 +227,7 @@ describe('WorkoutForm', () => {
 
   test('shows error when submitting without required fields', async () => {
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Submit the form without filling any fields
@@ -230,7 +261,7 @@ describe('WorkoutForm', () => {
     mockOnSubmit.mockResolvedValue({ success: true });
     
     await act(async () => {
-      render(<WorkoutForm onSubmit={mockOnSubmit} />);
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
     // Fill out the form
@@ -259,6 +290,32 @@ describe('WorkoutForm', () => {
     // Check if success message appears
     await waitFor(() => {
       expect(screen.getByText(/workout logged successfully/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
+  });
+
+  // Add test for template selection
+  test('loads workout template when selected', async () => {
+    await act(async () => {
+      renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
+    
+    // Select the template
+    await act(async () => {
+      userEvent.selectOptions(screen.getByLabelText(/load from template/i), '1');
+    });
+    
+    // Check if template data is loaded
+    expect(screen.getByLabelText(/workout name/i).value).toBe('Upper Body');
+    expect(screen.getByLabelText(/weight unit/i).value).toBe('kg');
+    
+    // Check exercise data
+    const exerciseInput = screen.getByPlaceholderText(/e\.g\., bench press, squat/i);
+    expect(exerciseInput.value).toBe('Bench Press');
+    
+    // Check set data
+    const weightInput = screen.getByPlaceholderText('Weight');
+    const repsInput = screen.getByPlaceholderText('Reps');
+    expect(weightInput.value).toBe('60');
+    expect(repsInput.value).toBe('10');
   });
 });
