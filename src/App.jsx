@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { WorkoutProvider } from './context/WorkoutContext';
+import { WorkoutTemplateProvider } from './context/WorkoutTemplateContext';
 import { AuthProvider, useAuth } from './context/AuthContext'; 
 import Dashboard from './components/Dashboard/Dashboard';
 import Login from './pages/Login';
@@ -46,26 +47,28 @@ const AppRoutes = () => {
 
   return (
     <WorkoutProvider>
-      <Router>
-        <Routes>
-          <Route 
-            path="/" 
-            element={<ProtectedRoute element={<Dashboard />} />} 
-          />
-          <Route 
-            path="/login" 
-            element={<PublicRoute element={<Login />} />} 
-          />
-          <Route 
-            path="/register" 
-            element={<PublicRoute element={<Register />} />} 
-          />
-          <Route 
-            path="/auth/confirm" 
-            element={<ConfirmationSuccess />} 
-          />
-        </Routes>
-      </Router>
+      <WorkoutTemplateProvider>
+        <Router>
+          <Routes>
+            <Route 
+              path="/" 
+              element={<ProtectedRoute element={<Dashboard />} />} 
+            />
+            <Route 
+              path="/login" 
+              element={<PublicRoute element={<Login />} />} 
+            />
+            <Route 
+              path="/register" 
+              element={<PublicRoute element={<Register />} />} 
+            />
+            <Route 
+              path="/auth/confirm" 
+              element={<ConfirmationSuccess />} 
+            />
+          </Routes>
+        </Router>
+      </WorkoutTemplateProvider>
     </WorkoutProvider>
   );
 };

@@ -164,25 +164,29 @@ export const deleteWorkout = async (id) => {
 export const initializeExerciseDatabase = async (exercises) => {
   try {
     // Check if exercises already exist
-    const { count, error: countError } = await supabase
+    const { data: existingExercises, error: fetchError } = await supabase
       .from('exercises')
-      .select('*', { count: 'exact', head: true });
+      .select('name');
     
-    if (countError) {
-      throw countError;
+    if (fetchError) {
+      throw fetchError;
     }
 
-    // If no exercises exist, insert sample data
-    if (count === 0 && exercises.length > 0) {
+    // Filter out exercises that already exist
+    const existingNames = new Set(existingExercises.map(ex => ex.name));
+    const newExercises = exercises.filter(ex => !existingNames.has(ex.name));
+
+    // Only insert if there are new exercises
+    if (newExercises.length > 0) {
       const { error } = await supabase
         .from('exercises')
-        .insert(exercises);
+        .insert(newExercises);
       
       if (error) {
         throw error;
       }
 
-      console.log('Exercise database initialized with sample data');
+      console.log(`Exercise database initialized with ${newExercises.length} new exercises`);
     }
   } catch (error) {
     console.error('Error initializing exercise database:', error);
@@ -239,6 +243,113 @@ export const updateUserSettings = async (userId, settings) => {
     return data;
   } catch (error) {
     console.error('Error updating user settings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a new workout template to the database
+ * @param {Object} templateData - The template data to add
+ * @returns {Promise<Object>} - The created template
+ */
+export const addWorkoutTemplate = async (templateData) => {
+  try {
+    const { data, error } = await supabase
+      .from('workout_templates')
+      .insert({
+        user_id: templateData.userId,
+        name: templateData.name,
+        unit: templateData.unit,
+        exercises: templateData.exercises
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error adding workout template:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get workout templates for a specific user
+ * @param {string} userId - The user ID
+ * @returns {Promise<Array>} - An array of templates
+ */
+export const getUserWorkoutTemplates = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('workout_templates')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching workout templates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a workout template
+ * @param {string} id - The template ID
+ * @param {Object} data - The updated template data
+ * @returns {Promise<Object>} - The updated template
+ */
+export const updateWorkoutTemplate = async (id, data) => {
+  try {
+    const updateData = {
+      ...data,
+      updated_at: new Date()
+    };
+
+    const { data: updatedTemplate, error } = await supabase
+      .from('workout_templates')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+
+    return updatedTemplate;
+  } catch (error) {
+    console.error('Error updating workout template:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a workout template
+ * @param {string} id - The template ID
+ * @returns {Promise<void>}
+ */
+export const deleteWorkoutTemplate = async (id) => {
+  try {
+    const { error } = await supabase
+      .from('workout_templates')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      throw error;
+    }
+
+    return { id };
+  } catch (error) {
+    console.error('Error deleting workout template:', error);
     throw error;
   }
 };
