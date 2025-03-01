@@ -62,3 +62,6 @@ A React and Firebase-based web application for tracking workouts and monitoring 
 - React Router
 - Firebase/Firestore
 - TailwindCSS (optional)
+
+## CI/CD Test
+This is a test commit to verify our CI/CD pipeline is working correctly with automerge and deploy-after-merge workflows.
