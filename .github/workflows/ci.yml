@@ -1,4 +1,4 @@
-name: CI
+name: CI and Auto-Merge
 
 on:
   pull_request:

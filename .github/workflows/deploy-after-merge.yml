@@ -1,13 +1,12 @@
-name: Test and Deploy
+name: Deploy to Production
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  test-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v3
     
@@ -19,27 +18,19 @@ jobs:
     
     - name: Install Dependencies
       run: npm ci
-    
-    - name: Run Tests with Coverage
-      run: npm run test:coverage
-      env:
-        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/lcov.info
-        fail_ci_if_error: true
-    
+      
     - name: Build Project
-      run: npm run build 
+      run: npm run build
       env:
         CI: false
         REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+        
     - name: Deploy to VPS
       uses: appleboy/scp-action@master
       with:
@@ -49,6 +40,7 @@ jobs:
         port: 10327
         source: "build/*"
         target: "/root/workouttracker"
+        strip_components: 1
     
     - name: Restart PM2
       uses: appleboy/ssh-action@master
@@ -59,4 +51,4 @@ jobs:
         port: 10327
         script: |
           cd /root/workouttracker
-          pm2 restart serve
+          pm2 restart serve 
