@@ -21,7 +21,7 @@ jobs:
   # Handle pushes to branches other than main
   process-branch:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+    if: github.ref != 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || github.event.inputs.deploy_only != 'true')
     steps:
       - uses: actions/checkout@v3
         with:
@@ -87,25 +87,25 @@ jobs:
       
       # Run tests (skip if deploy_only=true)
       - name: Set up Node.js for tests
-        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.deploy_only != 'true'
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
       
       - name: Install dependencies for tests
-        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.deploy_only != 'true'
         run: npm ci
       
       - name: Run tests with coverage
-        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.deploy_only != 'true'
         run: npm run test:coverage
         env:
           REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       
       - name: Upload coverage to Codecov
-        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.deploy_only != 'true'
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
