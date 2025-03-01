@@ -1,7 +1,7 @@
 // src/context/WorkoutContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from './AuthContext';
-import { getUserWorkouts, deleteWorkout } from '../supabase/firestoreService';
+import { getUserWorkouts, deleteWorkout, addWorkout as addWorkoutToDb } from '../supabase/firestoreService';
 
 const WorkoutContext = createContext();
 
@@ -89,10 +89,24 @@ export const WorkoutProvider = ({ children }) => {
     }
   };
 
+  // Add workout with error handling
+  const addWorkout = async (workoutData) => {
+    try {
+      const newWorkout = await addWorkoutToDb(workoutData);
+      addWorkoutToState(newWorkout);
+      return newWorkout;
+    } catch (err) {
+      console.error('Error adding workout:', err);
+      setError('Failed to add workout. Please try again later.');
+      throw err;
+    }
+  };
+
   const value = {
     workouts,
     loading,
     error,
+    addWorkout,
     addWorkoutToState,
     updateWorkoutInState,
     removeWorkoutFromState,
