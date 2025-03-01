@@ -1,6 +1,6 @@
 // src/components/WorkoutLogger/WorkoutForm.jsx
 import React, { useState, useEffect } from 'react';
-import { getExercises } from '../../firebase/firestore';
+import { getExercises } from '../../supabase/firestoreService';
 import { useWorkoutTemplateContext } from '../../context/WorkoutTemplateContext';
 import SetInput from './SetInput';
 
@@ -273,20 +273,19 @@ const WorkoutForm = ({ onSubmit }) => {
                   <label className="block text-sm text-gray-600 mb-1">
                     Exercise Name
                   </label>
-                  <input
-                    type="text"
-                    list={`exercises-${exerciseIndex}`}
+                  <select
                     value={exercise.name}
                     onChange={(e) => handleExerciseChange(exerciseIndex, 'name', e.target.value)}
-                    placeholder="e.g., Bench Press, Squat"
                     className="form-input"
                     required
-                  />
-                  <datalist id={`exercises-${exerciseIndex}`}>
+                  >
+                    <option value="">Select an exercise...</option>
                     {availableExercises.map((ex) => (
-                      <option key={ex.id} value={ex.name} />
+                      <option key={ex.id} value={ex.name}>
+                        {ex.name}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
                 {exercises.length > 1 && (
                   <button
