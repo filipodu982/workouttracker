@@ -1,7 +1,9 @@
-name: CI and Auto-Merge
+name: CI and Deploy
 
 on:
   pull_request:
+    branches: [ main ]
+  push:
     branches: [ main ]
 
 # Add permissions needed for auto-merge
@@ -12,7 +14,9 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    # Only run tests on pull requests, not on pushes to main
+    if: github.event_name == 'pull_request'
+    
     steps:
     - uses: actions/checkout@v3
     
@@ -41,7 +45,7 @@ jobs:
   auto-merge:
     needs: test
     runs-on: ubuntu-latest
-    if: success()
+    if: github.event_name == 'pull_request' && success()
     steps:
       - name: Auto-merge pull request
         uses: pascalgn/automerge-action@v0.15.6
@@ -51,4 +55,54 @@ jobs:
           MERGE_METHOD: "squash"
           MERGE_COMMIT_MESSAGE: "pull-request-title"
           MERGE_RETRIES: "6"
-          MERGE_RETRY_SLEEP: "10000" 
+          MERGE_RETRY_SLEEP: "10000"
+          
+  deploy:
+    runs-on: ubuntu-latest
+    # Only run deployment on direct pushes to main, not on pull requests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install Dependencies
+      run: npm ci
+      
+    - name: Build Project
+      run: npm run build
+      env:
+        CI: false
+        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+        
+    - name: Deploy to VPS
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: 10327
+        source: "build/*"
+        target: "/root/workouttracker"
+        strip_components: 1
+    
+    - name: Restart PM2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: 10327
+        script: |
+          cd /root/workouttracker
+          pm2 restart serve 
