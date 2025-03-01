@@ -148,7 +148,6 @@ jobs:
           port: 10327
           source: "build/*"
           target: "/root/workouttracker"
-          strip_components: 1
       
       - name: Restart PM2
         if: success()
