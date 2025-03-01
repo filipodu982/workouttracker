@@ -1,6 +1,6 @@
 // src/components/WorkoutLogger/WorkoutForm.jsx
 import React, { useState, useEffect } from 'react';
-import { getExercises } from '../../firebase/firestore';
+import { getExercises } from '../../supabase/firestoreService';
 import { useWorkoutTemplateContext } from '../../context/WorkoutTemplateContext';
 import SetInput from './SetInput';
 
@@ -266,32 +266,32 @@ const WorkoutForm = ({ onSubmit }) => {
         </div>
 
         <div className="space-y-6">
-          {exercises.map((exercise, exerciseIndex) => (
-            <div key={exerciseIndex} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          {exercises.map((exercise, index) => (
+            <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
               <div className="flex flex-col md:flex-row md:items-center mb-4">
                 <div className="flex-1 mb-2 md:mb-0 md:mr-4">
-                  <label className="block text-sm text-gray-600 mb-1">
+                  <label htmlFor={`exercise-name-${index}`} className="block text-sm text-gray-600 mb-1">
                     Exercise Name
                   </label>
-                  <input
-                    type="text"
-                    list={`exercises-${exerciseIndex}`}
+                  <select
+                    id={`exercise-name-${index}`}
                     value={exercise.name}
-                    onChange={(e) => handleExerciseChange(exerciseIndex, 'name', e.target.value)}
-                    placeholder="e.g., Bench Press, Squat"
+                    onChange={(e) => handleExerciseChange(index, 'name', e.target.value)}
                     className="form-input"
                     required
-                  />
-                  <datalist id={`exercises-${exerciseIndex}`}>
-                    {availableExercises.map((ex) => (
-                      <option key={ex.id} value={ex.name} />
+                  >
+                    <option value="">Select an exercise...</option>
+                    {availableExercises.map(ex => (
+                      <option key={ex.id} value={ex.name}>
+                        {ex.name}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
                 {exercises.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => removeExercise(exerciseIndex)}
+                    onClick={() => removeExercise(index)}
                     className="btn btn-danger flex items-center text-sm self-end"
                   >
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ const WorkoutForm = ({ onSubmit }) => {
                   </label>
                   <button
                     type="button"
-                    onClick={() => addSet(exerciseIndex)}
+                    onClick={() => addSet(index)}
                     className="text-primary hover:text-primary-dark flex items-center text-sm"
                   >
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,8 +333,8 @@ const WorkoutForm = ({ onSubmit }) => {
                         key={setIndex}
                         set={set}
                         setIndex={setIndex}
-                        onChange={(field, value) => handleSetChange(exerciseIndex, setIndex, field, value)}
-                        onRemove={() => removeSet(exerciseIndex, setIndex)}
+                        onChange={(field, value) => handleSetChange(index, setIndex, field, value)}
+                        onRemove={() => removeSet(index, setIndex)}
                         canRemove={exercise.sets.length > 1}
                         unit={unit}
                       />

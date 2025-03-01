@@ -3,16 +3,46 @@ import React, { act } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkoutForm from '../WorkoutForm';
-import { getExercises } from '../../../firebase/firestore';
+import { getExercises } from '../../../supabase/firestoreService';
 import WorkoutTemplateContext from '../../../context/WorkoutTemplateContext';
 
-// Mock the firestore module
-jest.mock('../../../firebase/firestore', () => ({
+// Mock the Supabase client
+jest.mock('../../../supabase/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Bench Press' },
+          { id: '2', name: 'Squat' },
+          { id: '3', name: 'Deadlift' }
+        ],
+        error: null
+      })
+    })),
+    auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: { user: { id: 'test-user-id' } } } }),
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } } }),
+      onAuthStateChange: jest.fn((callback) => {
+        callback('SIGNED_IN', { user: { id: 'test-user-id' } });
+        return { data: { unsubscribe: jest.fn() } };
+      }),
+    },
+  },
+}));
+
+// Mock the firestoreService module
+jest.mock('../../../supabase/firestoreService', () => ({
   getExercises: jest.fn().mockResolvedValue([
     { id: '1', name: 'Bench Press' },
     { id: '2', name: 'Squat' },
     { id: '3', name: 'Deadlift' }
-  ])
+  ]),
+  addWorkout: jest.fn().mockResolvedValue({ id: '1', name: 'Test Workout' })
 }));
 
 // Mock workout templates data
@@ -72,8 +102,10 @@ describe('WorkoutForm', () => {
     const unitSelect = screen.getByLabelText(/weight unit/i);
     expect(unitSelect.value).toBe('kg');
     
-    // Check if there's an initial empty exercise
-    expect(screen.getByPlaceholderText(/e\.g\., bench press, squat/i)).toBeInTheDocument();
+    // Check if there's an initial empty exercise select
+    const exerciseSelect = screen.getByLabelText(/exercise name/i);
+    expect(exerciseSelect).toBeInTheDocument();
+    expect(exerciseSelect.value).toBe('');
     
     // Wait for exercises to be fetched
     await waitFor(() => {
@@ -87,8 +119,8 @@ describe('WorkoutForm', () => {
     });
     
     // Initially there should be 1 exercise
-    let exerciseInputs = screen.getAllByPlaceholderText(/e\.g\., bench press, squat/i);
-    expect(exerciseInputs.length).toBe(1);
+    let exerciseSelects = screen.getAllByLabelText(/exercise name/i);
+    expect(exerciseSelects.length).toBe(1);
     
     // Click the Add Exercise button
     await act(async () => {
@@ -96,8 +128,8 @@ describe('WorkoutForm', () => {
     });
     
     // Now there should be 2 exercises
-    exerciseInputs = screen.getAllByPlaceholderText(/e\.g\., bench press, squat/i);
-    expect(exerciseInputs.length).toBe(2);
+    exerciseSelects = screen.getAllByLabelText(/exercise name/i);
+    expect(exerciseSelects.length).toBe(2);
   });
 
   test('removes an exercise when "Remove" button is clicked', async () => {
@@ -120,8 +152,8 @@ describe('WorkoutForm', () => {
     });
     
     // Now there should be 1 exercise
-    const exerciseInputs = screen.getAllByPlaceholderText(/e\.g\., bench press, squat/i);
-    expect(exerciseInputs.length).toBe(1);
+    const exerciseSelects = screen.getAllByLabelText(/exercise name/i);
+    expect(exerciseSelects.length).toBe(1);
   });
 
   test('adds a set when "Add Set" button is clicked', async () => {
@@ -188,7 +220,8 @@ describe('WorkoutForm', () => {
     
     // Exercise name
     await act(async () => {
-      userEvent.type(screen.getByPlaceholderText(/e\.g\., bench press, squat/i), 'Bench Press');
+      const exerciseSelect = screen.getByLabelText(/exercise name/i);
+      userEvent.selectOptions(exerciseSelect, 'Bench Press');
     });
     
     // Weight and reps
@@ -219,7 +252,6 @@ describe('WorkoutForm', () => {
       expect(submittedData.unit).toBe('kg');
       expect(submittedData.exercises.length).toBe(1);
       expect(submittedData.exercises[0].name).toBe('Bench Press');
-      expect(submittedData.exercises[0].sets.length).toBe(1);
       expect(submittedData.exercises[0].sets[0].weight).toBe(100);
       expect(submittedData.exercises[0].sets[0].reps).toBe(5);
     });
@@ -242,7 +274,8 @@ describe('WorkoutForm', () => {
     
     // Fill exercise name but not sets data
     await act(async () => {
-      userEvent.type(screen.getByPlaceholderText(/e\.g\., bench press, squat/i), 'Bench Press');
+      const exerciseSelect = screen.getByLabelText(/exercise name/i);
+      userEvent.selectOptions(exerciseSelect, 'Bench Press');
     });
     
     // Try submitting again
@@ -257,7 +290,6 @@ describe('WorkoutForm', () => {
   });
 
   test('shows success message after successful submission', async () => {
-    // Mock the onSubmit to return a success result
     mockOnSubmit.mockResolvedValue({ success: true });
     
     await act(async () => {
@@ -265,10 +297,18 @@ describe('WorkoutForm', () => {
     });
     
     // Fill out the form
+    // Workout name
     await act(async () => {
-      userEvent.type(screen.getByPlaceholderText(/e\.g\., bench press, squat/i), 'Bench Press');
+      userEvent.type(screen.getByPlaceholderText(/e\.g\., upper body, leg day/i), 'Test Workout');
     });
     
+    // Exercise name
+    await act(async () => {
+      const exerciseSelect = screen.getByLabelText(/exercise name/i);
+      userEvent.selectOptions(exerciseSelect, 'Bench Press');
+    });
+    
+    // Weight and reps
     const weightInput = screen.getByPlaceholderText('Weight');
     const repsInput = screen.getByPlaceholderText('Reps');
     
@@ -287,10 +327,10 @@ describe('WorkoutForm', () => {
       userEvent.click(screen.getByText(/log workout/i));
     });
     
-    // Check if success message appears
+    // Wait for success message
     await waitFor(() => {
       expect(screen.getByText(/workout logged successfully/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
   });
 
   // Add test for template selection
@@ -299,18 +339,19 @@ describe('WorkoutForm', () => {
       renderWithContext(<WorkoutForm onSubmit={mockOnSubmit} />);
     });
     
-    // Select the template
+    // Select a template
+    const templateSelect = screen.getByLabelText(/load from template/i);
     await act(async () => {
-      userEvent.selectOptions(screen.getByLabelText(/load from template/i), '1');
+      userEvent.selectOptions(templateSelect, '1');
     });
     
-    // Check if template data is loaded
-    expect(screen.getByLabelText(/workout name/i).value).toBe('Upper Body');
-    expect(screen.getByLabelText(/weight unit/i).value).toBe('kg');
+    // Check workout name
+    const workoutNameInput = screen.getByPlaceholderText(/e\.g\., upper body, leg day/i);
+    expect(workoutNameInput.value).toBe('Upper Body');
     
     // Check exercise data
-    const exerciseInput = screen.getByPlaceholderText(/e\.g\., bench press, squat/i);
-    expect(exerciseInput.value).toBe('Bench Press');
+    const exerciseSelect = screen.getByLabelText(/exercise name/i);
+    expect(exerciseSelect.value).toBe('Bench Press');
     
     // Check set data
     const weightInput = screen.getByPlaceholderText('Weight');

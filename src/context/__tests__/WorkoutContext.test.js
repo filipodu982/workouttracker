@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WorkoutProvider, useWorkoutContext } from '../WorkoutContext';
 import { AuthProvider } from '../AuthContext';
@@ -14,7 +14,13 @@ jest.mock('../../supabase/supabase', () => ({
       update: jest.fn().mockReturnThis(),
       delete: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Upper Body' },
+          { id: '2', name: 'Lower Body' }
+        ],
+        error: null
+      })
     })),
     auth: {
       getSession: jest.fn().mockResolvedValue({ data: { session: { user: { id: 'test-user-id' } } } }),
@@ -29,13 +35,22 @@ jest.mock('../../supabase/supabase', () => ({
 
 // Mock the firestoreService
 jest.mock('../../supabase/firestoreService', () => ({
-  getUserWorkouts: jest.fn(),
+  getUserWorkouts: jest.fn().mockResolvedValue([
+    { id: '1', name: 'Upper Body' },
+    { id: '2', name: 'Lower Body' }
+  ]),
   deleteWorkout: jest.fn(),
+  getExercises: jest.fn().mockResolvedValue([
+    { id: '1', name: 'Bench Press' },
+    { id: '2', name: 'Squat' },
+    { id: '3', name: 'Deadlift' }
+  ]),
+  addWorkout: jest.fn()
 }));
 
 // Test component that uses the workout context
 const TestComponent = () => {
-  const { workouts, loading, error, addWorkoutToState: addWorkoutFn } = useWorkoutContext();
+  const { workouts, loading, error, addWorkout } = useWorkoutContext();
   
   return (
     <div>
@@ -46,7 +61,7 @@ const TestComponent = () => {
           <li key={workout.id}>{workout.name}</li>
         ))}
       </ul>
-      <button onClick={() => addWorkoutFn({ name: 'New Workout' })}>Add Workout</button>
+      <button onClick={() => addWorkout({ name: 'New Workout' }).catch(() => {})}>Add Workout</button>
     </div>
   );
 };
@@ -110,9 +125,10 @@ describe('WorkoutContext', () => {
     const mockWorkouts = [{ id: '1', name: 'Upper Body' }];
     const newWorkout = { id: '2', name: 'New Workout' };
     
-    // Mock getUserWorkouts to return initial workouts
-    const { getUserWorkouts } = require('../../supabase/firestoreService');
+    // Mock getUserWorkouts and addWorkout
+    const { getUserWorkouts, addWorkout } = require('../../supabase/firestoreService');
     getUserWorkouts.mockResolvedValue(mockWorkouts);
+    addWorkout.mockResolvedValue(newWorkout);
     
     renderWithProviders(<TestComponent />);
     
@@ -122,7 +138,9 @@ describe('WorkoutContext', () => {
     });
     
     // Click add workout button
-    userEvent.click(screen.getByText('Add Workout'));
+    await act(async () => {
+      userEvent.click(screen.getByText('Add Workout'));
+    });
     
     // Wait for new workout to appear
     await waitFor(() => {
@@ -130,28 +148,32 @@ describe('WorkoutContext', () => {
     });
   });
 
-  it('should handle errors when adding workout', async () => {
-    const mockError = new Error('Failed to add workout');
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    
-    const { getByText } = render(
-      <AuthProvider>
-        <WorkoutProvider>
-          <TestComponent />
-        </WorkoutProvider>
-      </AuthProvider>
-    );
+  test('should handle errors when adding workout', async () => {
+    // Mock console.error
+    jest.spyOn(console, 'error');
+
+    // Mock getUserWorkouts and addWorkout
+    const { getUserWorkouts, addWorkout } = require('../../supabase/firestoreService');
+    getUserWorkouts.mockResolvedValue([{ id: '1', name: 'Upper Body' }]);
+    addWorkout.mockRejectedValue(new Error('Failed to add workout'));
+
+    renderWithProviders(<TestComponent />);
 
     // Wait for initial load
     await waitFor(() => {
-      expect(getByText('Upper Body')).toBeInTheDocument();
+      expect(screen.getByText('Upper Body')).toBeInTheDocument();
     });
 
-    // Mock addWorkoutToState to throw an error
-    const addWorkoutButton = getByText('Add Workout');
-    await userEvent.click(addWorkoutButton);
+    // Click add workout button
+    const addButton = screen.getByText('Add Workout');
+    await act(async () => {
+      await userEvent.click(addButton);
+    });
 
-    // Verify error is logged to console
-    expect(console.error).toHaveBeenCalled();
+    // Verify error is logged to console and error message is displayed
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith('Error adding workout:', expect.any(Error));
+      expect(screen.getByText(/failed to add workout/i)).toBeInTheDocument();
+    });
   });
 });
