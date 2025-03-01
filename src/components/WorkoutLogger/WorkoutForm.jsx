@@ -13,6 +13,7 @@ const WorkoutForm = ({ onSubmit }) => {
     sets: [{ weight: '', reps: '' }]
   }]);
   const [availableExercises, setAvailableExercises] = useState([]);
+  const [loadingExercises, setLoadingExercises] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -21,11 +22,17 @@ const WorkoutForm = ({ onSubmit }) => {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
+        setLoadingExercises(true);
         const exerciseData = await getExercises();
-        setAvailableExercises(exerciseData);
+        // Add a small delay to ensure data is fully processed
+        setTimeout(() => {
+          setAvailableExercises(exerciseData);
+          setLoadingExercises(false);
+        }, 300);
       } catch (err) {
         console.error('Error fetching exercises:', err);
         setError('Failed to load exercises. Please try again later.');
+        setLoadingExercises(false);
       }
     };
 
@@ -277,16 +284,24 @@ const WorkoutForm = ({ onSubmit }) => {
                     id={`exercise-name-${index}`}
                     value={exercise.name}
                     onChange={(e) => handleExerciseChange(index, 'name', e.target.value)}
-                    className="form-input"
+                    className={`form-input ${loadingExercises ? 'opacity-70' : ''}`}
                     required
+                    disabled={loadingExercises}
                   >
-                    <option value="">Select an exercise...</option>
-                    {availableExercises.map(ex => (
+                    <option value="">
+                      {loadingExercises ? "Loading exercises..." : "Select an exercise..."}
+                    </option>
+                    {!loadingExercises && availableExercises.map(ex => (
                       <option key={ex.id} value={ex.name}>
                         {ex.name}
                       </option>
                     ))}
                   </select>
+                  {loadingExercises && (
+                    <div className="mt-1 text-sm text-blue-600">
+                      Loading exercise list, please wait...
+                    </div>
+                  )}
                 </div>
                 {exercises.length > 1 && (
                   <button
