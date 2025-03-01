@@ -1,108 +1,163 @@
 name: CI and Deploy
 
 on:
-  pull_request:
-    branches: [ main ]
   push:
-    branches: [ main ]
+    branches:
+      - '**'  # This triggers on pushes to any branch
+  workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: 'Run only the deployment job'
+        required: false
+        default: false
+        type: boolean
 
-# Add permissions needed for auto-merge
+# Add permissions needed for auto-merge and PR creation
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  test:
+  # Handle pushes to branches other than main
+  process-branch:
     runs-on: ubuntu-latest
-    # Only run tests on pull requests, not on pushes to main
-    if: github.event_name == 'pull_request'
-    
+    if: github.ref != 'refs/heads/main' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run tests with coverage
-      run: npm run test:coverage
-      env:
-        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/lcov.info
-        fail_ci_if_error: true
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      # Run tests
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: true
 
-  auto-merge:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && success()
-    steps:
+      # Create a PR to main if tests pass
+      - name: Create Pull Request
+        if: success()
+        id: create-pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Automatic PR from ${{ github.ref_name }}
+          title: Automatic PR from ${{ github.ref_name }}
+          body: |
+            Automatic Pull Request created from branch ${{ github.ref_name }} after tests passed.
+          branch: ${{ github.ref_name }}
+          base: main
+          draft: false
+
+      # Auto-merge the PR if it was created
       - name: Auto-merge pull request
+        if: success() && steps.create-pr.outputs.pull-request-number != ''
         uses: pascalgn/automerge-action@v0.15.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST: ${{ steps.create-pr.outputs.pull-request-number }}
           MERGE_LABELS: ""
           MERGE_METHOD: "squash"
           MERGE_COMMIT_MESSAGE: "pull-request-title"
           MERGE_RETRIES: "6"
           MERGE_RETRY_SLEEP: "10000"
-          
-  deploy:
+  
+  # Handle pushes to main or manual triggers
+  process-main-and-deploy:
     runs-on: ubuntu-latest
-    # Only run deployment on direct pushes to main, not on pull requests
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch')
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install Dependencies
-      run: npm ci
+      - uses: actions/checkout@v3
       
-    - name: Build Project
-      run: npm run build
-      env:
-        CI: false
-        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-    
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+      # Run tests (skip if deploy_only=true)
+      - name: Set up Node.js for tests
+        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies for tests
+        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        run: npm ci
+      
+      - name: Run tests with coverage
+        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        run: npm run test:coverage
+        env:
+          REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      
+      - name: Upload coverage to Codecov
+        if: !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true')
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: true
+          
+      # Deploy if tests pass or if deploy_only=true
+      - name: Set up Node.js for deploy
+        if: success()
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies for deploy
+        if: success()
+        run: npm ci
         
-    - name: Deploy to VPS
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        port: 10327
-        source: "build/*"
-        target: "/root/workouttracker"
-        strip_components: 1
-    
-    - name: Restart PM2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        port: 10327
-        script: |
-          cd /root/workouttracker
-          pm2 restart serve 
+      - name: Build Project
+        if: success()
+        run: npm run build
+        env:
+          CI: false
+          REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      
+      - name: Setup SSH
+        if: success()
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+          
+      - name: Deploy to VPS
+        if: success()
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 10327
+          source: "build/*"
+          target: "/root/workouttracker"
+          strip_components: 1
+      
+      - name: Restart PM2
+        if: success()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 10327
+          script: |
+            cd /root/workouttracker
+            pm2 restart serve
